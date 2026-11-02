@@ -50,8 +50,6 @@ python app.py
 | **Bout de l'index** sur le bouton QUITTER | Quitter (le bouton passe au vert) |
 | **Clic gauche** sur le bouton QUITTER | Quitter |
 
-### Capture d'écran
-
 ---
 
 ## English
@@ -99,5 +97,3 @@ python app.py
 | Window **X** button | Quit |
 | **Index fingertip** on the QUITTER button | Quit (the button turns green) |
 | **Left click** on the QUITTER button | Quit |
-
-### Screenshot
