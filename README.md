@@ -2,8 +2,6 @@
 
 🇫🇷 [Français](#français) · 🇬🇧 [English](#english)
 
-![Démo](images/demo.png)
-
 ---
 
 ## Français
@@ -53,7 +51,6 @@ python app.py
 | **Clic gauche** sur le bouton QUITTER | Quitter |
 
 ### Capture d'écran
-Place une capture dans `images/demo.png` : elle s'affiche en haut de cette page.
 
 ---
 
@@ -104,4 +101,3 @@ python app.py
 | **Left click** on the QUITTER button | Quit |
 
 ### Screenshot
-Put a screenshot in `images/demo.png`: it shows at the top of this page.
