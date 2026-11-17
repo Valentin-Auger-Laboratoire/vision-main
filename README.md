@@ -2,17 +2,26 @@
 
 🇫🇷 [Français](#français) · 🇬🇧 [English](#english)
 
+**▶ [Essayer la démo en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** — les 5 étapes dans le navigateur, rien n'est envoyé · *[Try the live demo](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
+
+![Étape 3 : monde 3D construit avec les mains · étape 4 : lettre de l'alphabet des signes reconnue · étape 5 : humeur lue sur le visage](images/apercu.jpg)
+
 ---
 
 ## Français
 
 ### Ce que contient le dépôt
-Une série en deux étapes, construite sur **MediaPipe Hands** et **OpenCV** :
+Une série en cinq étapes, construite sur **MediaPipe** :
 
-| Étape | Script | Ce qu'il fait |
+| Étape | Fichiers | Ce qu'il fait |
 |---|---|---|
-| 1 | `app.py` | Suivi de la main en temps réel et bouton **QUITTER** activé au doigt |
-| 2 | `construction_gestes.py` | Construction de cubes : **pince** pour poser, **grille aimantée**, **profondeur estimée** par la taille de la main, effacement |
+| 1 | `app.py` (Python, OpenCV) | Suivi de la main en temps réel et bouton **QUITTER** activé au doigt |
+| 2 | `construction_gestes.py` (Python, OpenCV) | Construction de cubes : **pince** pour poser, **grille aimantée**, **profondeur estimée** par la taille de la main, effacement |
+| 3 | `demo/voxels.js`, `demo/mode3d.js` | **Vrai monde 3D** construit avec les deux mains, sur un moteur 3D écrit à la main, export **OBJ / STL** |
+| 4 | `demo/signes.js`, `demo/modesignes.js` | Lecture de l'**alphabet des signes LSF et ASL**, lettre par lettre, avec apprentissage de ses propres exemples |
+| 5 | `demo/humeur.js`, `demo/modevisage.js` | **Maillage du visage** (478 points) et **humeur** affichée en direct |
+
+Les étapes 1 et 2 sont en Python (mars 2026). Les étapes 3 à 5 ont été ajoutées en novembre 2026 et écrites directement pour le web (JavaScript, MediaPipe Tasks Vision) : elles tournent dans la [démo en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/), qui reprend aussi les étapes 1 et 2.
 
 Les deux scripts partent de l'exemple officiel MediaPipe Hands en Python :
 [google-ai-edge/mediapipe — docs/solutions/hands.md](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/hands.md).
@@ -79,17 +88,68 @@ python app.py                  # Étape 1
 python construction_gestes.py  # Étape 2
 ```
 
+
+### Étape 3 — monde 3D construit avec les deux mains
+L'étape 2 dessinait des cubes en perspective sur une image plate. Ici, les cubes vivent dans une **vraie scène 3D** (grille de 16 × 12 × 16), que l'on peut faire tourner. Le moteur 3D est **écrit à la main**, sans bibliothèque 3D (`demo/voxels.js`) :
+- **caméra en orbite** : projection perspective, et rayon inverse pour savoir ce qui est sous le doigt ;
+- **visée** : le rayon parcourt la grille case par case (algorithme d'Amanatides et Woo) jusqu'au premier cube touché, sinon jusqu'au sol ; le nouveau cube se pose contre la face visée ;
+- **affichage** : seules les faces visibles sont dessinées (faces cachées par un voisin ou tournées vers l'arrière retirées), du cube le plus loin au plus proche, avec un éclairage directionnel ; rendu **plein** ou **néon** ;
+- **tracé** : en gardant la pince, on trace une ligne ou un mur dans le plan du premier cube (le plan est verrouillé, sinon les cubes s'empileraient vers la caméra) ; une annulation retire tout le tracé ;
+- **symétrie miroir**, 8 couleurs, rotation automatique, sauvegarde dans le navigateur ;
+- **export OBJ + MTL** (couleurs) et **STL** pour l'impression 3D : faces extérieures seulement, 1 cube = 10 mm, s'ouvre dans Fusion 360, Blender ou un trancheur.
+
+| Geste | Effet |
+|---|---|
+| Main de droite : **pince pouce + index** | Poser un cube ; garder la pince et bouger = tracer |
+| Main de droite : **pince pouce + majeur** | Retirer le cube visé |
+| Main de gauche : **pince et déplacer** | Tourner la scène |
+| Main de gauche : **poing, monter / descendre** | Zoom |
+| **Index sur une couleur** (0,45 s) | Changer de couleur |
+| Souris (sans caméra) | Clic : poser · clic droit : retirer · glisser : tourner · molette : zoom |
+
+Les rôles des mains se décident par leur position à l'écran (la main de droite construit) ; un bouton les inverse.
+
+### Étape 4 — alphabet des signes (LSF et ASL)
+La lettre montrée à la caméra s'affiche avec sa confiance ; tenue 0,9 s, elle s'ajoute au message, que la page peut lire à voix haute. 24 lettres par alphabet : **J et Z** se font avec un mouvement et ne sont pas reconnues. La LSF et l'ASL ont les mêmes formes sauf **F, G, H, T et X** (par exemple le H de la LSF se fait avec l'index et l'auriculaire tendus).
+
+Comment c'est fait (`demo/signes.js`) :
+- **repère de la main** tiré du poignet et des bases de l'index et de l'auriculaire, pour être indépendant de la position, de la taille et de la rotation ;
+- **22 caractéristiques** : flexion de chaque doigt (articulations MCP et PIP + DIP), écarts entre doigts, croisement index / majeur, position du pouce, distances pouce – bouts des doigts, plus l'**orientation** de la main dans l'image (utile pour G, H, P, Q) ;
+- **modèles des lettres** calculés depuis une **main de synthèse** (cinématique des doigts écrite ici, proportions calées sur les points MediaPipe de vraies mains) ;
+- **plus proche modèle** avec une confiance (softmax des distances) et une stabilisation dans le temps ;
+- **apprendre mes signes** : on enregistre 25 images d'une lettre ; ces exemples comptent en plus des modèles et corrigent la plupart des erreurs.
+
+Vérifications : 300 tests sur des mains de synthèse (invariance, chaque lettre reconnue, 60 mains bruitées par lettre : **99,3 %** en LSF et en ASL) et 2 photos réelles de mains (V et D reconnus). Avec une vraie main, les lettres proches (A, S, E, M, N, T) peuvent se confondre : c'est à ça que servent les exemples personnels.
+
+### Étape 5 — visage et humeur
+Le modèle MediaPipe Face Landmarker donne **478 points** (dessinés en maillage) et **52 coefficients d'expression** (sourire, sourcils, bouche, yeux…). `demo/humeur.js` en déduit l'**humeur**, affichée en haut de l'image : **content, surpris, triste, contrarié ou neutre**, par des règles inspirées des unités d'action du FACS (par exemple : surpris = bouche ouverte + sourcils levés + yeux écarquillés). L'étiquette est lissée dans le temps pour ne pas clignoter, et une **calibration** de 2 s retire le visage « au repos » de la personne (des sourcils naturellement bas ne doivent pas être lus comme de la colère).
+
+C'est de la **reconnaissance d'expressions**, pas de l'identification : le modèle ne sait pas qui est devant la caméra. Et une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.
+
+### Tests de la version web
+```bash
+node demo/tests/test.js
+```
+2 359 vérifications : moteur 3D (projection ↔ rayon, visée comparée à une recherche case par case, faces cachées, OBJ et STL valides), signes (invariance, reconnaissance, robustesse, exemples personnels) et humeur (règles, calibration, lissage).
+
+`demo/` est une copie de la démo du portfolio (bibliothèque MediaPipe Tasks Vision et modèles inclus dans `demo/lib`, licence Apache 2.0, voir `demo/lib/NOTICE.txt`). Pour la lancer en local, il faut un petit serveur (`python -m http.server` dans le dossier `demo`), car la caméra et les modules ne marchent pas en ouvrant le fichier directement.
+
 ---
 
 ## English
 
 ### What's in the repository
-A two-step series built on **MediaPipe Hands** and **OpenCV**:
+A five-step series built on **MediaPipe**:
 
-| Step | Script | What it does |
+| Step | Files | What it does |
 |---|---|---|
-| 1 | `app.py` | Real-time hand tracking and a **QUITTER** (quit) button pressed with a fingertip |
-| 2 | `construction_gestes.py` | Cube building: **pinch** to place, **snap-to-grid**, **depth estimated** from hand size, undo |
+| 1 | `app.py` (Python, OpenCV) | Real-time hand tracking and a **QUITTER** (quit) button pressed with a fingertip |
+| 2 | `construction_gestes.py` (Python, OpenCV) | Cube building: **pinch** to place, **snap-to-grid**, **depth estimated** from hand size, undo |
+| 3 | `demo/voxels.js`, `demo/mode3d.js` | A **real 3D world** built with both hands, on a hand-written 3D engine, **OBJ / STL** export |
+| 4 | `demo/signes.js`, `demo/modesignes.js` | Reading the **LSF and ASL sign alphabets** letter by letter, with your own recorded examples |
+| 5 | `demo/humeur.js`, `demo/modevisage.js` | **Face mesh** (478 landmarks) and the **mood** shown live |
+
+Steps 1 and 2 are in Python (March 2026). Steps 3 to 5 were added in November 2026 and written directly for the web (JavaScript, MediaPipe Tasks Vision): they run in the [live demo](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/), which also includes steps 1 and 2.
 
 Both scripts start from the official MediaPipe Hands Python example:
 [google-ai-edge/mediapipe — docs/solutions/hands.md](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/hands.md).
@@ -155,3 +215,27 @@ pip install -r requirements.txt
 python app.py                  # Step 1
 python construction_gestes.py  # Step 2
 ```
+
+### Step 3 — a 3D world built with both hands
+Step 2 drew perspective cubes on a flat image. Here the cubes live in a **real 3D scene** (a 16 × 12 × 16 grid) that you can rotate. The 3D engine is **hand-written**, with no 3D library (`demo/voxels.js`): orbit camera with perspective projection and inverse ray; picking by walking the grid cell by cell (Amanatides & Woo) up to the first cube or the floor; only visible faces drawn, from the farthest cube to the nearest, with directional lighting (solid or neon); drawing lines and walls in a locked plane while the pinch is held; mirror symmetry, 8 colours, auto-rotate, browser save; **OBJ + MTL** and **STL** export (outer faces only, 1 cube = 10 mm) for Fusion 360, Blender or a slicer.
+
+| Gesture | Effect |
+|---|---|
+| Right-hand **thumb + index pinch** | Place a cube; keep pinching and move = draw |
+| Right-hand **thumb + middle pinch** | Remove the aimed cube |
+| Left hand: **pinch and move** | Rotate the scene |
+| Left hand: **fist, move up / down** | Zoom |
+| **Index on a colour** (0.45 s) | Change colour |
+| Mouse (no camera) | Click: place · right click: remove · drag: rotate · wheel: zoom |
+
+### Step 4 — sign alphabet (LSF and ASL)
+The letter shown to the camera appears with its confidence; held for 0.9 s, it is added to the message, which the page can read aloud. 24 letters per alphabet: **J and Z** need a movement and are not recognised. LSF and ASL share the same shapes except **F, G, H, T and X**. Recognition (`demo/signes.js`) uses a hand frame (wrist, index and little-finger bases), 22 invariant features (finger flexion, spreads, index/middle crossing, thumb position, thumb-to-fingertip distances) plus the hand orientation in the image; letter models come from a **synthetic hand** (finger kinematics written here, proportions fitted to MediaPipe landmarks of real hands); nearest model with a softmax confidence and time smoothing; **teach my signs** records 25 frames of a letter as extra models. Checked by 300 tests on synthetic hands (**99.3 %** on 60 noisy hands per letter, LSF and ASL) and 2 real hand photos (V and D recognised). With a real hand, close letters (A, S, E, M, N, T) can be confused: that is what personal examples are for.
+
+### Step 5 — face and mood
+MediaPipe Face Landmarker gives **478 landmarks** (drawn as a mesh) and **52 expression coefficients**. `demo/humeur.js` infers the **mood** shown at the top of the image — **happy, surprised, sad, annoyed or neutral** — with rules inspired by FACS action units, smoothed over time, with a 2 s **calibration** of the resting face. This is **expression recognition, not identification**: the model does not know who is in front of the camera. An expression is not an emotion: this is a demo, not a diagnosis.
+
+### Tests of the web version
+```bash
+node demo/tests/test.js
+```
+2,359 checks: 3D engine (projection ↔ ray, picking against a cell-by-cell search, hidden faces, valid OBJ and STL), signs (invariance, recognition, robustness, personal examples) and mood (rules, calibration, smoothing). `demo/` is a copy of the portfolio demo (MediaPipe Tasks Vision and models included in `demo/lib`, Apache 2.0, see `demo/lib/NOTICE.txt`); run it locally through a small server (`python -m http.server` in `demo`).
