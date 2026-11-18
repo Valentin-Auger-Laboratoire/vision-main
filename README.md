@@ -4,14 +4,14 @@
 
 **▶ [Essayer l'application en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** — dans le navigateur, rien n'est envoyé · *[Try it online](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
 
-![Atelier 3D en mode casque : pièces STL et formes en hologramme, vue stéréo pour un casque à téléphone](images/apercu.jpg)
+![Atelier 3D : pièces STL importées et formes affichées en hologramme](images/apercu.jpg)
 
 ---
 
 ## Français
 
 ### L'idée
-Manipuler des pièces 3D avec les mains, sans souris, comme des objets réels : devant la webcam d'un ordinateur, ou dans un **casque où l'on glisse son téléphone**. Dans le casque, l'écran se coupe en deux (une image par œil), la caméra arrière filme ce qu'il y a devant soi, on voit ses propres mains, et les pièces flottent dans la pièce.
+Manipuler des pièces 3D avec les mains, sans souris, comme des objets réels, **devant la webcam de son ordinateur** (elle filme l'utilisateur). En option, un mode casque pour téléphone coupe l'écran en deux.
 
 ### Atelier 3D
 - **Importer n'importe quelle pièce** STL (binaire ou texte) ou OBJ, par exemple un export de Fusion 360 ou SolidWorks (glisser le fichier sur l'image, ou bouton « Importer »). Les pièces de CAO en « Z vers le haut » sont remises droites ; les dimensions d'origine sont affichées.
@@ -24,11 +24,11 @@ Manipuler des pièces 3D avec les mains, sans souris, comme des objets réels : 
 - Aussi à la souris ou au doigt : glisser = déplacer, clic droit = tourner, molette = taille.
 
 ### Changer de page d'un geste
-Un **balayage de la main ouverte** passe à la page suivante ou précédente :
-- **Langue des signes** : l'alphabet **LSF ou ASL** est lu lettre par lettre (24 lettres ; J et Z demandent un mouvement), pour une personne qui ne parle pas. La lettre tenue 0,9 s s'ajoute au message, qui peut être lu à voix haute. On peut enregistrer ses propres exemples. Avec la caméra arrière ou le casque, on lit les signes de la personne en face.
-- **Visage** : maillage de 478 points et **expression** du visage filmé (content, surpris, triste, contrarié, neutre), déduite des 52 coefficients d'expression du modèle, avec calibration du visage au repos. Sur un ordinateur : son propre visage ; à travers le casque : celui des autres. C'est de la reconnaissance d'expressions, **pas d'identification**, et une expression n'est pas une émotion.
+**Une seule page agit à la fois** : en langue des signes, les gestes ne déplacent pas les pièces, et dans l'atelier aucune lettre n'est lue. Pour changer de page, on garde **les deux mains ouvertes pendant 1 s** : le menu des pages s'affiche dans l'image et on pince la page voulue (aucune lettre de l'alphabet ne se fait à deux mains, donc pas de changement par accident).
+- **Langue des signes** : l'alphabet **LSF ou ASL** est lu lettre par lettre (24 lettres ; J et Z demandent un mouvement), pour une personne qui ne parle pas : la webcam lit ses signes, la lettre tenue 0,9 s s'ajoute au message, qui peut être lu à voix haute. On peut enregistrer ses propres exemples.
+- **Visage** : maillage de 478 points et **expression** du visage filmé (content, surpris, triste, contrarié, neutre), déduite des 52 coefficients d'expression du modèle, avec calibration du visage au repos : la webcam filme le visage de l'utilisateur. C'est de la reconnaissance d'expressions, **pas d'identification**, et une expression n'est pas une émotion.
 
-### Mode casque
+### Mode casque (option)
 Écran coupé en deux, **vue stéréo** (écart des yeux réglable), caméra arrière, plein écran en paysage, et **gyroscope du téléphone** : les pièces restent à leur place quand on tourne la tête. Il fonctionne sur les trois pages.
 
 ### Ce qui est écrit à la main (`demo/`)
@@ -37,7 +37,7 @@ Un **balayage de la main ouverte** passe à la page suivante ou précédente :
 | `m3d.js` | vecteurs, quaternions, matrices, perspective, rayon depuis un pixel, intersections rayon / boîte et rayon / triangle |
 | `formes.js` | lecture STL / OBJ, normales, recentrage, formes de base, écriture STL |
 | `rendu.js` | moteur WebGL : fond caméra, éclairage, style hologramme, profondeur, vue stéréo |
-| `gestes.js` | pince avec hystérésis, main ouverte, poing, repère de la paume en 3D, balayage |
+| `gestes.js` | pince avec hystérésis, main ouverte, poing, repère de la paume en 3D, geste tenu (menu à deux mains) |
 | `atelier.js` | viser, saisir, déplacer, tourner, lancer, deux mains, corbeille |
 | `signes.js`, `modesignes.js` | alphabet des signes (repère de la main, 22 caractéristiques, modèles d'une main de synthèse, exemples personnels) |
 | `humeur.js`, `modevisage.js` | expression du visage à partir des coefficients du modèle |
@@ -49,7 +49,7 @@ La détection des mains et du visage vient de **MediaPipe Tasks Vision** (Google
 ```bash
 node demo/tests/test.js
 ```
-2 888 vérifications : formes (volume exact de chaque forme fermée, normales vers l'extérieur, STL écrit puis relu à l'identique, STL texte, OBJ, fichiers refusés), calcul 3D (quaternions, matrices, projection ↔ rayon), gestes (pince, main ouverte, poing, orientation de la main retrouvée à 10⁻⁶ rad, balayage), atelier (la pièce suit la main à l'écran, profondeur divisée par 2 quand la main paraît 2 fois plus grande, rotation transmise, lancer puis arrêt, deux mains, corbeille, boutons), signes et expressions.
+2 891 vérifications : formes (volume exact de chaque forme fermée, normales vers l'extérieur, STL écrit puis relu à l'identique, STL texte, OBJ, fichiers refusés), calcul 3D (quaternions, matrices, projection ↔ rayon), gestes (pince, main ouverte, poing, menu à deux mains ouvertes, orientation de la main retrouvée à 10⁻⁶ rad), atelier (la pièce suit la main à l'écran, profondeur divisée par 2 quand la main paraît 2 fois plus grande, rotation transmise, lancer puis arrêt, deux mains, corbeille, boutons), signes et expressions.
 
 Vérifié aussi dans Chromium avec une caméra simulée : pièce STL importée et manipulée, mains détectées sur une vidéo, mode casque, lettre V lue, sourire lu « content ». Les gestes devant une vraie caméra et le casque avec un vrai téléphone restent à essayer.
 
@@ -63,7 +63,7 @@ Lancer en local : `python -m http.server` dans `demo`, puis ouvrir `http://local
 ## English
 
 ### The idea
-Handle 3D parts with your hands, no mouse, like real objects: in front of a computer webcam, or inside a **headset you slide your phone into**. In the headset the screen splits in two (one image per eye), the rear camera films what is in front of you, you see your own hands, and the parts float in the room.
+Handle 3D parts with your hands, no mouse, like real objects, **in front of your computer webcam** (it films the user). An optional phone-headset mode splits the screen in two.
 
 ### 3D workshop
 - **Import any part**: STL (binary or text) or OBJ, e.g. a Fusion 360 or SolidWorks export (drop the file on the image or use "Import"). CAD parts with Z up are set upright; original dimensions are shown.
@@ -76,11 +76,11 @@ Handle 3D parts with your hands, no mouse, like real objects: in front of a comp
 - Also with the mouse or a finger: drag = move, right click = turn, wheel = size.
 
 ### Changing page with a gesture
-A **swipe of the open hand** goes to the next or previous page:
-- **Sign language**: the **LSF or ASL** alphabet is read letter by letter (24 letters; J and Z need a movement), for someone who cannot speak. A letter held for 0.9 s is added to the message, which can be read aloud. You can record your own examples. With the rear camera or the headset, you read the signs of the person facing you.
-- **Face**: 478-point mesh and the **expression** of the filmed face (happy, surprised, sad, annoyed, neutral), inferred from the model's 52 expression coefficients, with calibration of the resting face. On a computer: your own face; through the headset: other people's. This is expression recognition, **not identification**, and an expression is not an emotion.
+**Only one page acts at a time**: in sign language, gestures do not move parts, and in the workshop no letter is read. To change page, keep **both hands open for 1 s**: the page menu appears in the image and you pinch the page you want (no alphabet letter uses two hands, so no accidental change).
+- **Sign language**: the **LSF or ASL** alphabet is read letter by letter (24 letters; J and Z need a movement), for someone who cannot speak: the webcam reads their signs, a letter held for 0.9 s is added to the message, which can be read aloud. You can record your own examples.
+- **Face**: 478-point mesh and the **expression** of the filmed face (happy, surprised, sad, annoyed, neutral), inferred from the model's 52 expression coefficients, with calibration of the resting face: the webcam films the user's face. This is expression recognition, **not identification**, and an expression is not an emotion.
 
-### Headset mode
+### Headset mode (option)
 Split screen, **stereo view** (adjustable eye separation), rear camera, landscape full screen, and the **phone's gyroscope**: parts stay in place when you turn your head. Works on all three pages.
 
 ### Hand-written code (`demo/`)
@@ -90,7 +90,7 @@ Split screen, **stereo view** (adjustable eye separation), rear camera, landscap
 ```bash
 node demo/tests/test.js
 ```
-2,888 checks: shapes (exact volumes, outward normals, STL write/read round trip, text STL, OBJ, rejected files), 3D maths, gestures (pinch, open hand, fist, hand orientation recovered to 10⁻⁶ rad, swipe), workshop (the part follows the hand, depth halves when the hand looks twice as big, rotation transfer, throw then stop, two hands, bin, buttons), signs and expressions. Also checked in Chromium with a simulated camera; real-camera gestures and a real phone headset remain to be tried.
+2,891 checks: shapes (exact volumes, outward normals, STL write/read round trip, text STL, OBJ, rejected files), 3D maths, gestures (pinch, open hand, fist, two-open-hands menu, hand orientation recovered to 10⁻⁶ rad), workshop (the part follows the hand, depth halves when the hand looks twice as big, rotation transfer, throw then stop, two hands, bin, buttons), signs and expressions. Also checked in Chromium with a simulated camera; real-camera gestures and a real phone headset remain to be tried.
 
 ### First prototype (Python, March 2026)
 `app.py` (hand tracking and a QUIT button pressed with a finger) and `construction_gestes.py` (cubes placed by pinching) are the first experiments, with OpenCV and MediaPipe 0.10.21.
