@@ -2,13 +2,18 @@
 
 🇫🇷 [Français](#français) · 🇬🇧 [English](#english)
 
-**▶ [Essayer l'application en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** — dans le navigateur, rien n'est envoyé · *[Try it online](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
+**▶ [Essayer l'application en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** · **📘 [Guide d'utilisation (PDF)](docs/guide-utilisation.pdf)** — dans le navigateur, rien n'est envoyé · *[Try it online](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
 
 ![Atelier 3D : pièces STL importées et formes affichées en hologramme](images/apercu.jpg)
 
 ---
 
 ## Français
+
+### 📘 Guide d'utilisation
+Tout est expliqué pas à pas dans le **[guide d'utilisation (PDF, 10 pages)](docs/guide-utilisation.pdf)**, écrit pour quelqu'un qui découvre l'application ou qui l'a oubliée : ouvrir l'application et autoriser la caméra, changer de page avec le menu à deux mains, tous les gestes de l'atelier, importer et exporter une pièce, la langue des signes, le visage, le mode casque, les problèmes fréquents et leurs solutions, la lancer sur son ordinateur, comment le code est construit, lancer les tests et publier une nouvelle version.
+
+<a href="docs/guide-utilisation.pdf"><img src="docs/apercu-guide.png" alt="Première page du guide d'utilisation" width="260"></a>
 
 ### L'idée
 Manipuler des pièces 3D avec les mains, sans souris, comme des objets réels, **devant la webcam de son ordinateur** (elle filme l'utilisateur). En option, un mode casque pour téléphone coupe l'écran en deux.
@@ -61,6 +66,9 @@ Lancer en local : `python -m http.server` dans `demo`, puis ouvrir `http://local
 ---
 
 ## English
+
+### 📘 User guide
+A step-by-step **[user guide (PDF, in French, 10 pages)](docs/guide-utilisation.pdf)** covers opening the app and allowing the camera, the two-hands page menu, every workshop gesture, part import / export, sign language, face, headset mode, common problems, running it locally, how the code is built, tests and publishing a new version.
 
 ### The idea
 Handle 3D parts with your hands, no mouse, like real objects, **in front of your computer webcam** (it films the user). An optional phone-headset mode splits the screen in two.
