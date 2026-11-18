@@ -1,241 +1,96 @@
-# Vision Main — interactions gestuelles avec la webcam
+# Vision Main — atelier 3D piloté par les mains
 
 🇫🇷 [Français](#français) · 🇬🇧 [English](#english)
 
-**▶ [Essayer la démo en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** — les 5 étapes dans le navigateur, rien n'est envoyé · *[Try the live demo](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
+**▶ [Essayer l'application en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)** — dans le navigateur, rien n'est envoyé · *[Try it online](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/)*
 
-![Étape 3 : monde 3D construit avec les mains · étape 4 : lettre de l'alphabet des signes reconnue · étape 5 : humeur lue sur le visage](images/apercu.jpg)
+![Atelier 3D en mode casque : pièces STL et formes en hologramme, vue stéréo pour un casque à téléphone](images/apercu.jpg)
 
 ---
 
 ## Français
 
-### Ce que contient le dépôt
-Une série en cinq étapes, construite sur **MediaPipe** :
+### L'idée
+Manipuler des pièces 3D avec les mains, sans souris, comme des objets réels : devant la webcam d'un ordinateur, ou dans un **casque où l'on glisse son téléphone**. Dans le casque, l'écran se coupe en deux (une image par œil), la caméra arrière filme ce qu'il y a devant soi, on voit ses propres mains, et les pièces flottent dans la pièce.
 
-| Étape | Fichiers | Ce qu'il fait |
-|---|---|---|
-| 1 | `app.py` (Python, OpenCV) | Suivi de la main en temps réel et bouton **QUITTER** activé au doigt |
-| 2 | `construction_gestes.py` (Python, OpenCV) | Construction de cubes : **pince** pour poser, **grille aimantée**, **profondeur estimée** par la taille de la main, effacement |
-| 3 | `demo/voxels.js`, `demo/mode3d.js` | **Vrai monde 3D** construit avec les deux mains, sur un moteur 3D écrit à la main, export **OBJ / STL** |
-| 4 | `demo/signes.js`, `demo/modesignes.js` | Lecture de l'**alphabet des signes LSF et ASL**, lettre par lettre, avec apprentissage de ses propres exemples |
-| 5 | `demo/humeur.js`, `demo/modevisage.js` | **Maillage du visage** (478 points) et **humeur** affichée en direct |
+### Atelier 3D
+- **Importer n'importe quelle pièce** STL (binaire ou texte) ou OBJ, par exemple un export de Fusion 360 ou SolidWorks (glisser le fichier sur l'image, ou bouton « Importer »). Les pièces de CAO en « Z vers le haut » sont remises droites ; les dimensions d'origine sont affichées.
+- **Faire apparaître des formes** : cube, sphère, cylindre, cône, tore, pyramide (d'une pince sur la colonne de boutons dessinée dans l'image, utilisable dans le casque).
+- **Saisir** une pièce d'une pince pouce + index : elle suit la main en 3D, **recule ou avance** avec elle (la profondeur suit la taille apparente de la main) et **tourne comme la main** (orientation de la paume en 3D).
+- **Lâcher en tournant** : la pièce continue de tourner sur elle-même, puis ralentit.
+- **Deux mains** sur la même pièce : écarter pour l'agrandir, rapprocher pour la réduire, tourner les mains pour la faire pivoter.
+- **Supprimer** : la lâcher sur la corbeille.
+- Rendu **plein** ou **hologramme**, rotation continue, **export de la scène en STL** (en mm) pour la reprendre en CAO.
+- Aussi à la souris ou au doigt : glisser = déplacer, clic droit = tourner, molette = taille.
 
-Les étapes 1 et 2 sont en Python (mars 2026). Les étapes 3 à 5 ont été ajoutées en novembre 2026 et écrites directement pour le web (JavaScript, MediaPipe Tasks Vision) : elles tournent dans la [démo en ligne](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/), qui reprend aussi les étapes 1 et 2.
+### Changer de page d'un geste
+Un **balayage de la main ouverte** passe à la page suivante ou précédente :
+- **Langue des signes** : l'alphabet **LSF ou ASL** est lu lettre par lettre (24 lettres ; J et Z demandent un mouvement), pour une personne qui ne parle pas. La lettre tenue 0,9 s s'ajoute au message, qui peut être lu à voix haute. On peut enregistrer ses propres exemples. Avec la caméra arrière ou le casque, on lit les signes de la personne en face.
+- **Visage** : maillage de 478 points et **expression** du visage filmé (content, surpris, triste, contrarié, neutre), déduite des 52 coefficients d'expression du modèle, avec calibration du visage au repos. Sur un ordinateur : son propre visage ; à travers le casque : celui des autres. C'est de la reconnaissance d'expressions, **pas d'identification**, et une expression n'est pas une émotion.
 
-Les deux scripts partent de l'exemple officiel MediaPipe Hands en Python :
-[google-ai-edge/mediapipe — docs/solutions/hands.md](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/hands.md).
+### Mode casque
+Écran coupé en deux, **vue stéréo** (écart des yeux réglable), caméra arrière, plein écran en paysage, et **gyroscope du téléphone** : les pièces restent à leur place quand on tourne la tête. Il fonctionne sur les trois pages.
 
-### Étape 1 — `app.py` : suivi de la main
-Le script ouvre la webcam, repère les mains et dessine leur squelette (21 points et leurs liaisons) en direct.
-Un bouton **QUITTER** affiché sur l'image s'utilise sans clavier : il suffit d'y poser le bout de l'index.
-
-Par rapport à l'exemple officiel, j'ai ajouté :
-- un **bouton virtuel QUITTER**, qui s'active quand le bout de l'index (repère 8) entre dans le rectangle ;
-- un **retour visuel** : le bouton passe du rouge au vert quand l'index le survole ;
-- un **clic souris** sur le bouton (`cv2.setMouseCallback`) ;
-- un **bouton placé selon la taille de l'image** (`frame.shape`), quelle que soit la résolution de la webcam ;
-- un **arrêt réel quand on ferme la fenêtre** avec la croix (`cv2.getWindowProperty`) ;
-- un **message clair** si la webcam ne s'ouvre pas ;
-- l'**affichage des images par seconde** (FPS) ;
-- une **sortie propre** : la webcam et le modèle sont libérés (`cap.release()`, `hands.close()`).
-
-| Action | Effet |
+### Ce qui est écrit à la main (`demo/`)
+| Fichier | Contenu |
 |---|---|
-| Touche **Q** | Quitter |
-| **Croix** de la fenêtre | Quitter |
-| **Bout de l'index** sur le bouton QUITTER | Quitter (le bouton passe au vert) |
-| **Clic gauche** sur le bouton QUITTER | Quitter |
+| `m3d.js` | vecteurs, quaternions, matrices, perspective, rayon depuis un pixel, intersections rayon / boîte et rayon / triangle |
+| `formes.js` | lecture STL / OBJ, normales, recentrage, formes de base, écriture STL |
+| `rendu.js` | moteur WebGL : fond caméra, éclairage, style hologramme, profondeur, vue stéréo |
+| `gestes.js` | pince avec hystérésis, main ouverte, poing, repère de la paume en 3D, balayage |
+| `atelier.js` | viser, saisir, déplacer, tourner, lancer, deux mains, corbeille |
+| `signes.js`, `modesignes.js` | alphabet des signes (repère de la main, 22 caractéristiques, modèles d'une main de synthèse, exemples personnels) |
+| `humeur.js`, `modevisage.js` | expression du visage à partir des coefficients du modèle |
+| `app.js` | pages, caméra avant / arrière, mode casque, gyroscope, import / export |
 
-### Étape 2 — `construction_gestes.py` : construire des cubes à la main
-Un cube fantôme (bleu ciel) suit le bout de l'index. On le pose en pinçant le pouce et l'index, et il se fige en vert.
+La détection des mains et du visage vient de **MediaPipe Tasks Vision** (Google, Apache 2.0), fournie dans `demo/lib` avec ses modèles (voir `demo/lib/NOTICE.txt`).
 
-- **Grille aimantée** : la position est arrondie sur une grille dont le pas dépend de la largeur de l'image.
-- **Profondeur simulée** : l'écart entre le poignet et la base de l'index grandit quand la main se rapproche de la caméra. Il fixe la taille du cube : plus la main est proche, plus le cube est grand. **Ce n'est pas de la vraie 3D** : aucune profondeur n'est mesurée, et les cubes sont dessinés en perspective (face avant, face arrière décalée, arêtes reliées) sur l'image 2D.
-- **Deux mains** : chaque main a son propre verrou, donc une pince pose exactement un cube.
-- **Effacement** : poing fermé ou touche Z pour retirer le dernier cube, touche C pour tout effacer.
-- **Proportions** : le seuil de pince, le pas de la grille, la taille des cubes et le bouton OFF s'adaptent à la résolution de la webcam.
-- Affichage du **nombre de cubes** et des **FPS**, message clair si la webcam ne s'ouvre pas, sortie propre.
-
-| Action | Effet |
-|---|---|
-| **Pince** pouce + index | Poser un cube |
-| **Rapprocher / éloigner** la main | Agrandir / réduire le cube fantôme |
-| **Poing fermé** | Effacer le dernier cube |
-| Touche **Z** | Effacer le dernier cube |
-| Touche **C** | Tout effacer |
-| Touche **Q** | Quitter |
-| **Croix** de la fenêtre | Quitter |
-| **Clic gauche** sur le bouton OFF | Quitter |
-
-### Installation (commune aux deux scripts)
-Python 3.9 à 3.12 (`mediapipe` 0.10.21 n'existe pas pour Python 3.13).
-
-```bash
-git clone https://github.com/Valentin-Auger-Laboratoire/vision-main.git
-cd vision-main
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS / Linux
-pip install -r requirements.txt
-```
-
-La version de `mediapipe` est fixée à 0.10.21, car les scripts utilisent l'API `mp.solutions`. Celle-ci n'existe plus dans les versions récentes.
-
-### Lancement
-```bash
-python app.py                  # Étape 1
-python construction_gestes.py  # Étape 2
-```
-
-
-### Étape 3 — monde 3D construit avec les deux mains
-L'étape 2 dessinait des cubes en perspective sur une image plate. Ici, les cubes vivent dans une **vraie scène 3D** (grille de 16 × 12 × 16), que l'on peut faire tourner. Le moteur 3D est **écrit à la main**, sans bibliothèque 3D (`demo/voxels.js`) :
-- **caméra en orbite** : projection perspective, et rayon inverse pour savoir ce qui est sous le doigt ;
-- **visée** : le rayon parcourt la grille case par case (algorithme d'Amanatides et Woo) jusqu'au premier cube touché, sinon jusqu'au sol ; le nouveau cube se pose contre la face visée ;
-- **affichage** : seules les faces visibles sont dessinées (faces cachées par un voisin ou tournées vers l'arrière retirées), du cube le plus loin au plus proche, avec un éclairage directionnel ; rendu **plein** ou **néon** ;
-- **tracé** : en gardant la pince, on trace une ligne ou un mur dans le plan du premier cube (le plan est verrouillé, sinon les cubes s'empileraient vers la caméra) ; une annulation retire tout le tracé ;
-- **symétrie miroir**, 8 couleurs, rotation automatique, sauvegarde dans le navigateur ;
-- **export OBJ + MTL** (couleurs) et **STL** pour l'impression 3D : faces extérieures seulement, 1 cube = 10 mm, s'ouvre dans Fusion 360, Blender ou un trancheur.
-
-| Geste | Effet |
-|---|---|
-| Main de droite : **pince pouce + index** | Poser un cube ; garder la pince et bouger = tracer |
-| Main de droite : **pince pouce + majeur** | Retirer le cube visé |
-| Main de gauche : **pince et déplacer** | Tourner la scène |
-| Main de gauche : **poing, monter / descendre** | Zoom |
-| **Index sur une couleur** (0,45 s) | Changer de couleur |
-| Souris (sans caméra) | Clic : poser · clic droit : retirer · glisser : tourner · molette : zoom |
-
-Les rôles des mains se décident par leur position à l'écran (la main de droite construit) ; un bouton les inverse.
-
-### Étape 4 — alphabet des signes (LSF et ASL)
-La lettre montrée à la caméra s'affiche avec sa confiance ; tenue 0,9 s, elle s'ajoute au message, que la page peut lire à voix haute. 24 lettres par alphabet : **J et Z** se font avec un mouvement et ne sont pas reconnues. La LSF et l'ASL ont les mêmes formes sauf **F, G, H, T et X** (par exemple le H de la LSF se fait avec l'index et l'auriculaire tendus).
-
-Comment c'est fait (`demo/signes.js`) :
-- **repère de la main** tiré du poignet et des bases de l'index et de l'auriculaire, pour être indépendant de la position, de la taille et de la rotation ;
-- **22 caractéristiques** : flexion de chaque doigt (articulations MCP et PIP + DIP), écarts entre doigts, croisement index / majeur, position du pouce, distances pouce – bouts des doigts, plus l'**orientation** de la main dans l'image (utile pour G, H, P, Q) ;
-- **modèles des lettres** calculés depuis une **main de synthèse** (cinématique des doigts écrite ici, proportions calées sur les points MediaPipe de vraies mains) ;
-- **plus proche modèle** avec une confiance (softmax des distances) et une stabilisation dans le temps ;
-- **apprendre mes signes** : on enregistre 25 images d'une lettre ; ces exemples comptent en plus des modèles et corrigent la plupart des erreurs.
-
-Vérifications : 300 tests sur des mains de synthèse (invariance, chaque lettre reconnue, 60 mains bruitées par lettre : **99,3 %** en LSF et en ASL) et 2 photos réelles de mains (V et D reconnus). Avec une vraie main, les lettres proches (A, S, E, M, N, T) peuvent se confondre : c'est à ça que servent les exemples personnels.
-
-### Étape 5 — visage et humeur
-Le modèle MediaPipe Face Landmarker donne **478 points** (dessinés en maillage) et **52 coefficients d'expression** (sourire, sourcils, bouche, yeux…). `demo/humeur.js` en déduit l'**humeur**, affichée en haut de l'image : **content, surpris, triste, contrarié ou neutre**, par des règles inspirées des unités d'action du FACS (par exemple : surpris = bouche ouverte + sourcils levés + yeux écarquillés). L'étiquette est lissée dans le temps pour ne pas clignoter, et une **calibration** de 2 s retire le visage « au repos » de la personne (des sourcils naturellement bas ne doivent pas être lus comme de la colère).
-
-C'est de la **reconnaissance d'expressions**, pas de l'identification : le modèle ne sait pas qui est devant la caméra. Et une expression n'est pas une émotion : c'est une démonstration, pas un diagnostic.
-
-### Tests de la version web
+### Tests
 ```bash
 node demo/tests/test.js
 ```
-2 359 vérifications : moteur 3D (projection ↔ rayon, visée comparée à une recherche case par case, faces cachées, OBJ et STL valides), signes (invariance, reconnaissance, robustesse, exemples personnels) et humeur (règles, calibration, lissage).
+2 888 vérifications : formes (volume exact de chaque forme fermée, normales vers l'extérieur, STL écrit puis relu à l'identique, STL texte, OBJ, fichiers refusés), calcul 3D (quaternions, matrices, projection ↔ rayon), gestes (pince, main ouverte, poing, orientation de la main retrouvée à 10⁻⁶ rad, balayage), atelier (la pièce suit la main à l'écran, profondeur divisée par 2 quand la main paraît 2 fois plus grande, rotation transmise, lancer puis arrêt, deux mains, corbeille, boutons), signes et expressions.
 
-`demo/` est une copie de la démo du portfolio (bibliothèque MediaPipe Tasks Vision et modèles inclus dans `demo/lib`, licence Apache 2.0, voir `demo/lib/NOTICE.txt`). Pour la lancer en local, il faut un petit serveur (`python -m http.server` dans le dossier `demo`), car la caméra et les modules ne marchent pas en ouvrant le fichier directement.
+Vérifié aussi dans Chromium avec une caméra simulée : pièce STL importée et manipulée, mains détectées sur une vidéo, mode casque, lettre V lue, sourire lu « content ». Les gestes devant une vraie caméra et le casque avec un vrai téléphone restent à essayer.
+
+Lancer en local : `python -m http.server` dans `demo`, puis ouvrir `http://localhost:8000` (la caméra demande une page servie, pas un fichier ouvert directement ; sur téléphone, il faut du HTTPS : la version en ligne).
+
+### Premier prototype (Python, mars 2026)
+`app.py` (suivi de la main et bouton QUITTER au doigt) et `construction_gestes.py` (cubes posés par pince) sont les premiers essais, avec OpenCV et MediaPipe 0.10.21 (`pip install -r requirements.txt`, Python 3.9 à 3.12).
 
 ---
 
 ## English
 
-### What's in the repository
-A five-step series built on **MediaPipe**:
+### The idea
+Handle 3D parts with your hands, no mouse, like real objects: in front of a computer webcam, or inside a **headset you slide your phone into**. In the headset the screen splits in two (one image per eye), the rear camera films what is in front of you, you see your own hands, and the parts float in the room.
 
-| Step | Files | What it does |
-|---|---|---|
-| 1 | `app.py` (Python, OpenCV) | Real-time hand tracking and a **QUITTER** (quit) button pressed with a fingertip |
-| 2 | `construction_gestes.py` (Python, OpenCV) | Cube building: **pinch** to place, **snap-to-grid**, **depth estimated** from hand size, undo |
-| 3 | `demo/voxels.js`, `demo/mode3d.js` | A **real 3D world** built with both hands, on a hand-written 3D engine, **OBJ / STL** export |
-| 4 | `demo/signes.js`, `demo/modesignes.js` | Reading the **LSF and ASL sign alphabets** letter by letter, with your own recorded examples |
-| 5 | `demo/humeur.js`, `demo/modevisage.js` | **Face mesh** (478 landmarks) and the **mood** shown live |
+### 3D workshop
+- **Import any part**: STL (binary or text) or OBJ, e.g. a Fusion 360 or SolidWorks export (drop the file on the image or use "Import"). CAD parts with Z up are set upright; original dimensions are shown.
+- **Spawn shapes**: cube, sphere, cylinder, cone, torus, pyramid (by pinching on the button column drawn in the image, usable in the headset).
+- **Grab** a part with a thumb + index pinch: it follows the hand in 3D, **moves closer or further** with it (depth follows the apparent hand size) and **turns like the hand** (3D palm orientation).
+- **Release while turning**: the part keeps spinning, then slows down.
+- **Both hands** on the same part: spread to enlarge, bring together to shrink, turn the hands to rotate it.
+- **Delete**: release it over the bin.
+- **Solid** or **hologram** rendering, continuous spin, **scene export to STL** (mm) to take it back to CAD.
+- Also with the mouse or a finger: drag = move, right click = turn, wheel = size.
 
-Steps 1 and 2 are in Python (March 2026). Steps 3 to 5 were added in November 2026 and written directly for the web (JavaScript, MediaPipe Tasks Vision): they run in the [live demo](https://valentin-auger-laboratoire.github.io/portfolio/demos/vision-main/), which also includes steps 1 and 2.
+### Changing page with a gesture
+A **swipe of the open hand** goes to the next or previous page:
+- **Sign language**: the **LSF or ASL** alphabet is read letter by letter (24 letters; J and Z need a movement), for someone who cannot speak. A letter held for 0.9 s is added to the message, which can be read aloud. You can record your own examples. With the rear camera or the headset, you read the signs of the person facing you.
+- **Face**: 478-point mesh and the **expression** of the filmed face (happy, surprised, sad, annoyed, neutral), inferred from the model's 52 expression coefficients, with calibration of the resting face. On a computer: your own face; through the headset: other people's. This is expression recognition, **not identification**, and an expression is not an emotion.
 
-Both scripts start from the official MediaPipe Hands Python example:
-[google-ai-edge/mediapipe — docs/solutions/hands.md](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/hands.md).
+### Headset mode
+Split screen, **stereo view** (adjustable eye separation), rear camera, landscape full screen, and the **phone's gyroscope**: parts stay in place when you turn your head. Works on all three pages.
 
-### Step 1 — `app.py`: hand tracking
-The script opens the webcam, detects hands and draws their skeleton (21 landmarks and their connections) in real time.
-A **QUITTER** button drawn on the frame works without a keyboard: just point your index fingertip at it.
+### Hand-written code (`demo/`)
+`m3d.js` (3D maths), `formes.js` (STL / OBJ reader, shapes, STL writer), `rendu.js` (WebGL engine, stereo), `gestes.js` (gestures), `atelier.js` (grab, move, rotate, throw, two hands, bin), `signes.js` + `modesignes.js` (sign alphabet), `humeur.js` + `modevisage.js` (facial expression), `app.js` (pages, front / rear camera, headset, gyroscope, import / export). Hand and face detection come from **MediaPipe Tasks Vision** (Google, Apache 2.0), shipped in `demo/lib` with its models.
 
-On top of the official example, I added:
-- a **virtual QUIT button** that fires when the index fingertip (landmark 8) enters the rectangle;
-- **visual feedback**: the button turns from red to green when the fingertip is over it;
-- a **mouse click** on the button (`cv2.setMouseCallback`);
-- a **button positioned from the frame size** (`frame.shape`), whatever the webcam resolution;
-- a **real exit when the window is closed** with the X (`cv2.getWindowProperty`);
-- a **clear error message** if the webcam can't be opened;
-- an **on-screen FPS counter**;
-- a **clean shutdown** that releases the webcam and the model (`cap.release()`, `hands.close()`).
-
-| Action | Effect |
-|---|---|
-| **Q** key | Quit |
-| Window **X** button | Quit |
-| **Index fingertip** on the QUITTER button | Quit (the button turns green) |
-| **Left click** on the QUITTER button | Quit |
-
-### Step 2 — `construction_gestes.py`: building cubes by hand
-A ghost cube (light blue) follows the index fingertip. Pinch your thumb and index finger to place it, and it freezes in green.
-
-- **Snap-to-grid**: the position is rounded to a grid whose step depends on the frame width.
-- **Simulated depth**: the distance between the wrist and the base of the index finger grows as the hand gets closer to the camera. It sets the cube size: the closer the hand, the bigger the cube. **This is not real 3D**: no depth is measured, and the cubes are drawn in perspective (front face, offset back face, connected edges) on the 2D image.
-- **Two hands**: each hand has its own lock, so one pinch places exactly one cube.
-- **Undo**: a closed fist or the Z key removes the last cube, and the C key clears everything.
-- **Proportions**: the pinch threshold, grid step, cube size and OFF button scale with the webcam resolution.
-- On-screen **cube count** and **FPS**, a clear message if the webcam can't be opened, and a clean shutdown.
-
-| Action | Effect |
-|---|---|
-| Thumb + index **pinch** | Place a cube |
-| Move the hand **closer / farther** | Enlarge / shrink the ghost cube |
-| **Closed fist** | Remove the last cube |
-| **Z** key | Remove the last cube |
-| **C** key | Clear everything |
-| **Q** key | Quit |
-| Window **X** button | Quit |
-| **Left click** on the OFF button | Quit |
-
-### Installation (shared by both scripts)
-Python 3.9 to 3.12 (`mediapipe` 0.10.21 is not available for Python 3.13).
-
-```bash
-git clone https://github.com/Valentin-Auger-Laboratoire/vision-main.git
-cd vision-main
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS / Linux
-pip install -r requirements.txt
-```
-
-`mediapipe` is pinned to 0.10.21 because the scripts use the `mp.solutions` API, which is gone from recent releases.
-
-### Run
-```bash
-python app.py                  # Step 1
-python construction_gestes.py  # Step 2
-```
-
-### Step 3 — a 3D world built with both hands
-Step 2 drew perspective cubes on a flat image. Here the cubes live in a **real 3D scene** (a 16 × 12 × 16 grid) that you can rotate. The 3D engine is **hand-written**, with no 3D library (`demo/voxels.js`): orbit camera with perspective projection and inverse ray; picking by walking the grid cell by cell (Amanatides & Woo) up to the first cube or the floor; only visible faces drawn, from the farthest cube to the nearest, with directional lighting (solid or neon); drawing lines and walls in a locked plane while the pinch is held; mirror symmetry, 8 colours, auto-rotate, browser save; **OBJ + MTL** and **STL** export (outer faces only, 1 cube = 10 mm) for Fusion 360, Blender or a slicer.
-
-| Gesture | Effect |
-|---|---|
-| Right-hand **thumb + index pinch** | Place a cube; keep pinching and move = draw |
-| Right-hand **thumb + middle pinch** | Remove the aimed cube |
-| Left hand: **pinch and move** | Rotate the scene |
-| Left hand: **fist, move up / down** | Zoom |
-| **Index on a colour** (0.45 s) | Change colour |
-| Mouse (no camera) | Click: place · right click: remove · drag: rotate · wheel: zoom |
-
-### Step 4 — sign alphabet (LSF and ASL)
-The letter shown to the camera appears with its confidence; held for 0.9 s, it is added to the message, which the page can read aloud. 24 letters per alphabet: **J and Z** need a movement and are not recognised. LSF and ASL share the same shapes except **F, G, H, T and X**. Recognition (`demo/signes.js`) uses a hand frame (wrist, index and little-finger bases), 22 invariant features (finger flexion, spreads, index/middle crossing, thumb position, thumb-to-fingertip distances) plus the hand orientation in the image; letter models come from a **synthetic hand** (finger kinematics written here, proportions fitted to MediaPipe landmarks of real hands); nearest model with a softmax confidence and time smoothing; **teach my signs** records 25 frames of a letter as extra models. Checked by 300 tests on synthetic hands (**99.3 %** on 60 noisy hands per letter, LSF and ASL) and 2 real hand photos (V and D recognised). With a real hand, close letters (A, S, E, M, N, T) can be confused: that is what personal examples are for.
-
-### Step 5 — face and mood
-MediaPipe Face Landmarker gives **478 landmarks** (drawn as a mesh) and **52 expression coefficients**. `demo/humeur.js` infers the **mood** shown at the top of the image — **happy, surprised, sad, annoyed or neutral** — with rules inspired by FACS action units, smoothed over time, with a 2 s **calibration** of the resting face. This is **expression recognition, not identification**: the model does not know who is in front of the camera. An expression is not an emotion: this is a demo, not a diagnosis.
-
-### Tests of the web version
+### Tests
 ```bash
 node demo/tests/test.js
 ```
-2,359 checks: 3D engine (projection ↔ ray, picking against a cell-by-cell search, hidden faces, valid OBJ and STL), signs (invariance, recognition, robustness, personal examples) and mood (rules, calibration, smoothing). `demo/` is a copy of the portfolio demo (MediaPipe Tasks Vision and models included in `demo/lib`, Apache 2.0, see `demo/lib/NOTICE.txt`); run it locally through a small server (`python -m http.server` in `demo`).
+2,888 checks: shapes (exact volumes, outward normals, STL write/read round trip, text STL, OBJ, rejected files), 3D maths, gestures (pinch, open hand, fist, hand orientation recovered to 10⁻⁶ rad, swipe), workshop (the part follows the hand, depth halves when the hand looks twice as big, rotation transfer, throw then stop, two hands, bin, buttons), signs and expressions. Also checked in Chromium with a simulated camera; real-camera gestures and a real phone headset remain to be tried.
+
+### First prototype (Python, March 2026)
+`app.py` (hand tracking and a QUIT button pressed with a finger) and `construction_gestes.py` (cubes placed by pinching) are the first experiments, with OpenCV and MediaPipe 0.10.21.
